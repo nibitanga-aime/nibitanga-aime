@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="rw">
+<head>
+  <meta name="description" content="Check battery percentage and estimate shutdown time with Battery Life Checker. Get alerts when low battery hits 15%. Works offline too.">
+<meta name="keywords" content="Battery, battery timer, battery checker, battery life, power status, shutdown time, battery alert">
+<meta name="author" content="Nibitanga Aime">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battery Life Checker</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <meta name="theme-color" content="#1e3c72"/>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #1e3c72, #2a5298);
+      color: #fff;
+      text-align: center;
+      padding: 50px;
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 20px;
+    }
+
+    #status {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 20px;
+      border-radius: 10px;
+      font-size: 1.5em;
+      display: inline-block;
+    }
+
+    .buzz {
+      animation: shake 0.5s infinite;
+    }
+
+    @keyframes shake {
+      0% { transform: translate(1px, 1px) rotate(0deg); }
+      100% { transform: translate(-1px, -2px) rotate(-1deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Battery Life Checker</h1>
+  <div id="status">Tegereza gato...</div>
+  <audio id="buzzer" preload="auto">
+    <source src="https://www.soundjay.com/button/beep-07.wav" type="audio/wav">
+    Your browser does not support audio.
+  </audio>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+
+    navigator.getBattery().then(function (battery) {
+      const statusEl = document.getElementById("status");
+      const buzzer = document.getElementById("buzzer");
+      let hasBuzzed = false;
+
+      function updateBatteryInfo() {
+        const level = Math.round(battery.level * 100);
+        const charging = battery.charging;
+        const timeLeft = battery.dischargingTime;
+
+        let message = `Battery: ${level}%<br>`;
+        if (!charging && timeLeft !== Infinity) {
+          message += `Igihe gisigaye: ${Math.floor(timeLeft / 60)} min`;
+        } else if (charging) {
+          message += `Iri ku muriro.`;
+        } else {
+          message += `Igihe ntikiramenyekana.`;
+        }
+
+        statusEl.innerHTML = message;
+
+        if (level <= 15 && !charging) {
+          statusEl.classList.add("buzz");
+          if (!hasBuzzed) {
+            buzzer.play().catch(() => {});
+            hasBuzzed = true;
+          }
+        } else {
+          statusEl.classList.remove("buzz");
+          hasBuzzed = false;
+        }
+      }
+
+      updateBatteryInfo();
+      battery.addEventListener("levelchange", updateBatteryInfo);
+      battery.addEventListener("chargingchange", updateBatteryInfo);
+      battery.addEventListener("dischargingtimechange", updateBatteryInfo);
+    });
+  </script>
+</body>
+  </html>
